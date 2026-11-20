@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mentor match prototype</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--ink:#14213a;--mute:#5b6678;--line:#d9dfe8;--navy:#0b2a4a;--gold:#ffc72c;--good:#1b7f5c;--warn:#b25e00;--bad:#b3261e;--on-navy:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1522;--card:#17202f;--ink:#e8edf5;--mute:#9aa6b8;--line:#2b384d;--navy:#071a30;--good:#4cc79a;--warn:#f0a548;--bad:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1522;--card:#17202f;--ink:#e8edf5;--mute:#9aa6b8;--line:#2b384d;--navy:#071a30;--good:#4cc79a;--warn:#f0a548;--bad:#ff8a80;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--navy);color:var(--on-navy);padding:1.5rem 1rem 0}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font:600 1.8rem/1.2 Georgia,"Times New Roman",serif;margin:0 0 .25rem}
+header p{margin:0 0 1rem;color:#c5d2e4;max-width:60ch}
+nav{display:flex;gap:.25rem;flex-wrap:wrap}
+nav button{background:transparent;color:#c5d2e4;border:0;border-bottom:3px solid transparent;padding:.7rem 1rem;font:inherit;cursor:pointer}
+nav button[aria-selected="true"]{color:#fff;border-color:var(--gold);font-weight:600}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+main{max-width:1000px;margin:0 auto;padding:1.25rem 1rem 3rem}
+section[hidden]{display:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.25rem;margin-bottom:1rem}
+label,legend{font-weight:600;display:block;margin:.9rem 0 .3rem}
+input[type=text],select,textarea{width:100%;padding:.55rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chips label{font-weight:400;margin:0;border:1px solid var(--line);border-radius:999px;padding:.25rem .8rem;cursor:pointer}
+.chips input{margin-right:.35rem}
+.chips label:has(input:checked){background:var(--navy);color:#fff;border-color:var(--navy)}
+fieldset{border:0;padding:0;margin:0}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:6px;padding:.65rem 1.2rem;font:inherit;font-weight:600;cursor:pointer;margin-top:1.1rem}
+.btn.gold{background:var(--gold);color:#14213a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;margin-bottom:1rem}
+.stat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:6px;padding:.8rem 1rem}
+.stat b{display:block;font:600 1.7rem Georgia,serif}
+.stat span{color:var(--mute);font-size:.88rem}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{text-align:left;padding:.6rem .5rem;border-bottom:1px solid var(--line);vertical-align:top;font-size:.92rem}
+th{color:var(--mute);font-weight:600}
+.bar{height:8px;background:var(--line);border-radius:4px;width:90px;margin-top:4px}
+.bar i{display:block;height:100%;border-radius:4px}
+.tag{display:inline-block;font-size:.78rem;padding:.1rem .5rem;border-radius:4px;border:1px solid currentColor;font-weight:600}
+.ok{color:var(--good)}.rev{color:var(--warn)}.low{color:var(--bad)}
+.muted{color:var(--mute)}
+.heat{border-collapse:separate;border-spacing:2px;min-width:0;width:auto}
+.heat th,.heat td{padding:0;border:0}
+.heat th.col{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.78rem;height:7rem;text-align:left;font-weight:500;white-space:nowrap}
+.heat th.row{font-size:.82rem;white-space:nowrap;padding-right:.5rem;position:sticky;left:0;background:var(--card);text-align:right;font-weight:500}
+.cell{width:38px;height:34px;border:0;border-radius:4px;font:600 .78rem system-ui,sans-serif;cursor:pointer;color:#fff}
+.cell.lo{color:var(--ink)}
+.cell.pick{outline:3px solid var(--gold);outline-offset:-1px;box-shadow:0 0 0 1px var(--navy)}
+.nox{display:block;width:38px;height:34px;border-radius:4px;background:repeating-linear-gradient(45deg,var(--line),var(--line) 3px,transparent 3px,transparent 6px)}
+.basis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.6rem;margin:.8rem 0}
+.basis div{border-left:4px solid var(--gold);padding:.1rem .7rem;font-size:.9rem}
+.basis b{display:block}
+.blk{margin:1.6rem 0 0;padding-top:.9rem;border-top:1px solid var(--line);font:600 1.1rem Georgia,serif}.blk small{display:block;font:400 .85rem system-ui,sans-serif;color:var(--mute)}
+.legend{display:flex;gap:.6rem;align-items:center;font-size:.85rem;color:var(--mute);margin:.5rem 0}
+.grad{display:inline-block;width:110px;height:12px;border-radius:3px;background:linear-gradient(90deg,rgba(11,90,168,.15),rgba(11,90,168,1))}
+ul.ins{padding-left:1.1rem;margin:.4rem 0}
+ul.ins li{margin:.35rem 0}
+#toast{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;padding:.7rem 1.1rem;border-radius:8px;border:2px solid var(--gold)}
+#toast[hidden]{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+<h1>Mentor match prototype</h1>
+<p>Synthetic data only. Mentees and mentors complete a short questionnaire, the matcher scores every pair, and coordinators review the results.</p>
+<nav role="tablist">
+<button role="tab" aria-selected="true" data-t="mentee">Mentee survey</button>
+<button role="tab" aria-selected="false" data-t="mentor">Mentor survey</button>
+<button role="tab" aria-selected="false" data-t="results">Matches and analysis</button>
+</nav></div></header>
+<main>
+<section id="mentee"><div class="card"><h2>Mentee questionnaire</h2><div id="menteeForm"></div></div></section>
+<section id="mentor" hidden><div class="card"><h2>Mentor questionnaire</h2><div id="mentorForm"></div></div></section>
+<section id="results" hidden>
+<div class="grid" id="stats"></div>
+<div class="card"><h2>Match heatmap</h2><p class="muted">Each cell is one mentee and mentor pair, scored 0 to 100. Gold outlines mark the recommended matches. Coordinators approve every match, and scores under 55 are flagged for review.</p>
+<div class="basis"><div><b>Goals and priorities (45)</b>Mentee ranks 1 to 3 weighted 3-2-1 against the mentor expertise.</div><div><b>Style and availability (30)</b>Format 10, feedback approach 10, frequency 10 (5 if one step apart).</div><div><b>Profile (15)</b>Mentor is more senior than the mentee.</div><div><b>Open text (10)</b>Keyword overlap in the extra context both wrote.</div></div>
+<p class="muted">Hatched cells are ruled out: different cities without virtual, no shared language, mentor has fewer weekly hours than the mentee needs, or one person is on the other avoid list. Letters in brackets are city initials (T, M, C).</p>
+<div class="legend"><span>Low score</span><span class="grad"></span><span>High score</span></div>
+<div class="scroll" id="matches"></div><p id="detail"></p></div>
+<div class="card"><h2>Analysis</h2><div id="insights"></div></div>
+<div class="card"><h2>Cohort data</h2><p class="muted" id="counts"></p><button class="btn" id="reset">Reset to fake data</button></div>
+</section>
+</main>
+<div id="toast" hidden></div>
+<script>
+const INTERESTS=["Data and analytics","Software engineering","Cybersecurity","Wealth management","Capital markets","Product management","AI and machine learning","Risk and compliance"];
+const CADENCE=["Weekly","Biweekly","Monthly"],LOCS=["Toronto","Montreal","Calgary"],FUNCS=["Technology","Data","Markets","Wealth","Risk","Product"],TEN=["Co-op","0-2 yrs","3-7 yrs","8+ yrs"],LANGS=["English","French"],FMT=["Video call","In person","Chat and email"],FEED=["Direct","Supportive","Question-led"],HRS=[1,2,3];
+const GOALS=["build confidence presenting to senior stakeholders","learn how to write production quality code and get code reviews","understand how markets and trading desks work day to day","get career advice on moving from analytics into product","learn machine learning and how to deploy models safely","grow my network and understand different business lines","improve technical skills in security and threat modelling","learn how risk teams assess client portfolios"];
+const NAMES=["Ava Chen","Noah Singh","Maya Roy","Liam Patel","Zoe Tremblay","Ethan Kim","Priya Nair","Lucas Martin","Sofia Ali","Owen Brooks","Nina Gagnon","Dev Sharma","Hana Ito","Jonas Weber","Leila Haddad","Marc Dubois","Tara Wong","Omar Said","Ines Costa","Ravi Menon","Elena Petrov","Sam Fraser","Julia Novak","Ken Mori","Chloe Adams","Ben Okafor","Rina Das","Tom Leclerc"];
+let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const picks=(a,n)=>{const c=[...a],o=[];while(o.length<n)o.push(c.splice(Math.floor(rnd()*c.length),1)[0]);return o};
+let mentors=[],mentees=[];
+function seedData(){seed=7;mentors=[];mentees=[];
+const lg=()=>rnd()>.5?["English","French"]:["English"];
+for(let i=0;i<16;i++)mentors.push({name:NAMES[i],loc:pick(LOCS),virtual:rnd()>.4,fn:pick(FUNCS),ten:pick(TEN.slice(2)),langs:lg(),interests:picks(INTERESTS,3),cadence:pick(CADENCE),fmt:pick(FMT),feed:pick(FEED),hrs:pick([1,2,2,3]),cap:rnd()>.6?2:1,goal:pick(GOALS),avoid:""});
+for(let i=16;i<26;i++)mentees.push({name:NAMES[i],loc:pick(LOCS),virtual:rnd()>.4,fn:pick(FUNCS),ten:pick(TEN.slice(0,2)),langs:lg(),ranks:picks(INTERESTS,3),cadence:pick(CADENCE),fmt:pick(FMT),feed:pick(FEED),hrs:pick([1,1,2]),goal:pick(GOALS),avoid:i===16?NAMES[0]:""});}
+const STOP=new Set("to and how the my of in on a i want learn get understand".split(" "));
+const toks=s=>new Set(s.toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/).filter(w=>w.length>2&&!STOP.has(w)));
+const jac=(a,b)=>{const i=[...a].filter(x=>b.has(x)).length,u=new Set([...a,...b]).size;return u?i/u:0};
+const avoids=(a,n)=>a.toLowerCase().split(",").map(x=>x.trim()).includes(n.toLowerCase());
+function score(me,mo){
+ if(me.loc!==mo.loc&&!(me.virtual&&mo.virtual))return null;
+ if(!me.langs.some(l=>mo.langs.includes(l)))return null;
+ if(mo.hrs<me.hrs||avoids(me.avoid,mo.name)||avoids(mo.avoid,me.name))return null;
+ const W=[3,2,1],shared=me.ranks.filter(k=>mo.interests.includes(k));
+ const got=me.ranks.reduce((a,k,i)=>a+(mo.interests.includes(k)?W[i]:0),0),tot=me.ranks.reduce((a,_,i)=>a+W[i],0);
+ const sInt=got/tot*45;
+ const d=Math.abs(CADENCE.indexOf(me.cadence)-CADENCE.indexOf(mo.cadence));
+ const sCad=d===0?10:d===1?5:0,sFmt=me.fmt===mo.fmt?10:3,sFeed=me.feed===mo.feed?10:4;
+ const gap=TEN.indexOf(mo.ten)-TEN.indexOf(me.ten),sProf=gap>=2?15:gap===1?8:0;
+ const sTxt=Math.min(1,jac(toks(me.goal),toks(mo.goal))*4)*10;
+ return{total:Math.round(sInt+sCad+sFmt+sFeed+sProf+sTxt),parts:{int:Math.round(sInt),cad:sCad,fmt:sFmt,feed:sFeed,prof:sProf,txt:Math.round(sTxt)},shared,fmt:me.fmt===mo.fmt,feed:me.feed===mo.feed,cad:d===0,txt:sTxt>4,loc:me.loc===mo.loc};
+}
+function assign(){
+ const S=mentees.map(me=>mentors.map(mo=>score(me,mo)));
+ const slots=mentors.map(m=>m.cap);const pairs=[];
+ S.forEach((r,i)=>r.forEach((s,j)=>{if(s)pairs.push([i,j,s.total])}));
+ pairs.sort((a,b)=>b[2]-a[2]);
+ const asg={};
+ for(const[i,j]of pairs){if(asg[i]===undefined&&slots[j]>0){asg[i]=j;slots[j]--}}
+ // swap pass: exchange mentors between two mentees if total score improves
+ let improved=true,n=0;
+ while(improved&&n++<20){improved=false;
+  const ks=Object.keys(asg).map(Number);
+  for(const a of ks)for(const b of ks){if(a>=b)continue;
+   const sa=S[a][asg[b]],sb=S[b][asg[a]];
+   if(sa&&sb&&sa.total+sb.total>S[a][asg[a]].total+S[b][asg[b]].total){[asg[a],asg[b]]=[asg[b],asg[a]];improved=true}}}
+ return{S,asg};
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function why(me,mo,s){
+ const r=[];
+ if(s.shared.length)r.push("mentor covers your priorities: "+s.shared.join(" and ").toLowerCase());
+ if(s.fmt)r.push("both prefer "+me.fmt.toLowerCase());
+ if(s.feed)r.push("same feedback approach ("+me.feed.toLowerCase()+")");
+ if(s.cad)r.push("both prefer "+me.cadence.toLowerCase()+" meetings");
+ if(s.txt)r.push("open-text context overlaps");
+ r.push(s.loc?"same location":"virtual match");
+ return r.join("; ");
+}
+function render(){
+ const{S,asg}=assign();
+ const rows=mentees.map((me,i)=>{const j=asg[i];if(j===undefined)return{me,none:true};const s=S[i][j];return{me,mo:mentors[j],s}});
+ const matched=rows.filter(r=>!r.none),unm=rows.filter(r=>r.none);
+ const avg=matched.length?Math.round(matched.reduce((a,r)=>a+r.s.total,0)/matched.length):0;
+ const flagged=matched.filter(r=>r.s.total<55);
+ document.getElementById("stats").innerHTML=
+  `<div class="stat"><b>${matched.length}/${mentees.length}</b><span>mentees matched</span></div>
+   <div class="stat"><b>${avg}</b><span>average compatibility (0 to 100)</span></div>
+   <div class="stat"><b>${flagged.length}</b><span>matches to review</span></div>
+   <div class="stat"><b>${mentors.reduce((a,m)=>a+m.cap,0)}</b><span>mentor spots</span></div>`;
+ const col=t=>t>=70?"var(--good)":t>=55?"var(--warn)":"var(--bad)";
+ const heatCell=(i,j)=>{const s=S[i][j];if(!s)return `<td><span class="nox" title="Ruled out by program criteria, availability or avoid list"></span></td>`;
+  const pick=asg[i]===j;return `<td><button class="cell${s.total<50?" lo":""}${pick?" pick":""}" data-i="${i}" data-j="${j}" style="background:rgba(11,90,168,${(.15+s.total/100*.85).toFixed(2)})" aria-label="${esc(mentees[i].name)} and ${esc(mentors[j].name)}: ${s.total}${pick?", recommended":""}">${s.total}</button></td>`};
+ document.getElementById("matches").innerHTML=`<table class="heat"><thead><tr><th></th>${mentors.map(m=>`<th class="col" scope="col">${esc(m.name)} (${esc(m.loc[0])})</th>`).join("")}</tr></thead><tbody>${mentees.map((me,i)=>`<tr><th class="row" scope="row">${esc(me.name)} (${esc(me.loc[0])})</th>${mentors.map((_,j)=>heatCell(i,j)).join("")}</tr>`).join("")}</tbody></table>`;
+ const det=document.getElementById("detail");
+ det.innerHTML=`<b>Recommended pairs:</b> ${matched.map(r=>esc(r.me.name)+" with "+esc(r.mo.name)+" ("+r.s.total+")").join("; ")||"none"}<br><span class="muted">Select any cell to see how its score was built.</span>`;
+ document.getElementById("matches").onclick=e=>{const b=e.target.closest(".cell");if(!b)return;const i=+b.dataset.i,j=+b.dataset.j,s=S[i][j],p=s.parts;
+  det.innerHTML=`<b>${esc(mentees[i].name)} and ${esc(mentors[j].name)}: ${s.total}/100</b><br>Goals ${p.int}/45, format ${p.fmt}/10, feedback ${p.feed}/10, cadence ${p.cad}/10, profile ${p.prof}/15, open text ${p.txt}/10.<br><span class="muted">${esc(why(mentees[i],mentors[j],s))}</span>`};
+ // insights
+ const demand={},supply={};INTERESTS.forEach(k=>{demand[k]=0;supply[k]=0});
+ mentees.forEach(m=>m.ranks.forEach(k=>demand[k]++));mentors.forEach(m=>m.interests.forEach(k=>supply[k]+=m.cap));
+ const gaps=INTERESTS.filter(k=>demand[k]>supply[k]).sort((a,b)=>(demand[b]-supply[b])-(demand[a]-supply[a]));
+ const sty=matched.filter(r=>r.s.fmt).length,cad=matched.filter(r=>r.s.cad).length;
+ const locs=LOCS.map(l=>({l,d:mentees.filter(m=>m.loc===l).length,s:mentors.filter(m=>m.loc===l).reduce((a,m)=>a+m.cap,0)})).filter(x=>x.d>x.s);
+ const ins=[];
+ ins.push(`Overall fit is <b>${avg}/100</b>. ${matched.length-flagged.length} of ${matched.length} matches are at or above the review threshold.`);
+ if(gaps.length)ins.push(`<b>Mentor supply gap:</b> mentees want more ${gaps.slice(0,3).map(k=>`${k.toLowerCase()} (${demand[k]} requests, ${supply[k]} spots)`).join(", ")}. Recruit mentors in these areas before the Summer 2027 cohort.`);
+ else ins.push("Mentor supply covers every interest area requested.");
+ if(locs.length)ins.push(`<b>Location pressure:</b> ${locs.map(x=>`${x.l} has ${x.d} mentees for ${x.s} spots`).join("; ")}. Virtual-friendly mentors help close this.`);
+ ins.push(`<b>Format and cadence:</b> ${Math.round(sty/Math.max(1,matched.length)*100)}% of matches share a meeting format and ${Math.round(cad/Math.max(1,matched.length)*100)}% share a meeting cadence. Low rates here predict early disengagement, so check these first in review.`);
+ if(flagged.length)ins.push(`<b>Review first:</b> ${flagged.map(r=>esc(r.me.name)+" with "+esc(r.mo.name)+" ("+r.s.total+")").join(", ")}.`);
+ if(unm.length)ins.push(`<b>Unmatched:</b> ${unm.map(r=>esc(r.me.name)).join(", ")}.`);
+ const cls=document.getElementById("insights");
+ cls.innerHTML=`<ul class="ins">${ins.map(i=>`<li>${i}</li>`).join("")}</ul><p class="muted">This analysis runs on rules in the browser. In the production version, an LLM (such as Azure OpenAI) would read the free-text goals and write the match explanations, with a coordinator approving each result.</p>`;
+ document.getElementById("counts").textContent=`${mentors.length} mentors and ${mentees.length} mentees in the pool. Surveys you submit are added here.`;
+}
+function chips(name,opts,type="checkbox"){return `<div class="chips">${opts.map(o=>`<label><input type="${type}" name="${name}" value="${esc(o)}"${type==="radio"&&o===opts[0]?" required":""}>${esc(o)}</label>`).join("")}</div>`}
+const sel=(id,o,blank)=>`<select id="${id}">${blank?'<option value="">None</option>':""}${o.map(x=>`<option>${esc(x)}</option>`).join("")}</select>`;
+const blk=(t,h)=>`<h3 class="blk">${t}<small>${h}</small></h3>`;
+function form(role){
+ const m=role==="mentor",r=role;
+ return `<form id="f-${r}">
+ ${blk("1. Profile and background","Used to confirm expertise and filter the directory")}
+ <label for="${r}-name">Name</label><input type="text" id="${r}-name" required>
+ <label for="${r}-fn">Business function</label>${sel(r+"-fn",FUNCS)}
+ <label for="${r}-ten">${m?"Years of experience":"Where you are in your career"}</label>${sel(r+"-ten",m?TEN.slice(2):TEN.slice(0,2))}
+ ${blk("2. Goals and priorities",m?"Your strongest areas drive the shortlist":"Your ranking drives the shortlist")}
+ ${m?`<fieldset><legend>Areas you can mentor in (choose up to 3)</legend>${chips("mentor-int",INTERESTS)}</fieldset>`:[1,2,3].map(n=>`<label for="mentee-r${n}">Development priority ${n}${n>1?" (optional)":""}</label>${sel("mentee-r"+n,INTERESTS,n>1)}`).join("")}
+ ${blk("3. Style and availability","Rules out pairings that cannot realistically be sustained")}
+ <fieldset><legend>Meeting frequency</legend>${chips(r+"-cad",CADENCE,"radio")}</fieldset>
+ <fieldset><legend>Preferred format</legend>${chips(r+"-fmt",FMT,"radio")}</fieldset>
+ <fieldset><legend>${m?"How you give feedback":"Feedback you respond to best"}</legend>${chips(r+"-feed",FEED,"radio")}</fieldset>
+ <label for="${r}-hrs">${m?"Hours per week you can give each mentee":"Hours per week you can commit"}</label>${sel(r+"-hrs",HRS)}
+ ${m?`<label for="mentor-cap">Number of mentees you can take</label><select id="mentor-cap"><option>1</option><option>2</option></select>`:""}
+ ${blk("4. Program criteria","Keeps the match within program rules")}
+ <label for="${r}-loc">Office location</label>${sel(r+"-loc",LOCS)}
+ <label><input type="checkbox" id="${r}-virt"> Open to meeting virtually with someone in another city</label>
+ <fieldset><legend>Languages you can work in</legend>${chips(r+"-lang",LANGS)}</fieldset>
+ <label><input type="checkbox" id="${r}-elig" required> ${m?"I completed mentor onboarding and will not mentor someone in my reporting line":"I am in a current co-op term and eligible for the program"}</label>
+ ${blk("5. Open text","Catches context that structured fields miss")}
+ <label for="${r}-goal">Anything else the team should know?</label><textarea id="${r}-goal" rows="3" required></textarea>
+ <label for="${r}-avoid">${m?"Mentees to avoid":"Mentors to avoid"} (full names, comma separated, optional)</label><input type="text" id="${r}-avoid">
+ <button class="btn gold" type="submit">Submit ${r} survey</button></form>`;
+}
+function bind(role){
+ document.getElementById("f-"+role).addEventListener("submit",e=>{e.preventDefault();
+  const g=n=>[...document.querySelectorAll(`input[name="${role}-${n}"]:checked`)].map(x=>x.value),v=n=>document.getElementById(role+"-"+n);
+  const langs=g("lang");if(!langs.length){toast("Choose at least one language.");return}
+  const o={name:v("name").value.trim(),loc:v("loc").value,virtual:v("virt").checked,fn:v("fn").value,ten:v("ten").value,langs,cadence:g("cad")[0],fmt:g("fmt")[0],feed:g("feed")[0],hrs:+v("hrs").value,goal:v("goal").value,avoid:v("avoid").value};
+  if(role==="mentor"){const ints=g("int");if(!ints.length||ints.length>3){toast("Choose 1 to 3 areas.");return}
+   o.interests=ints;o.cap=+document.getElementById("mentor-cap").value;mentors.push(o)}
+  else{const rk=[1,2,3].map(n=>document.getElementById("mentee-r"+n).value).filter(Boolean);
+   if(new Set(rk).size!==rk.length){toast("Each priority must be different.");return}
+   o.ranks=rk;mentees.push(o)}
+  e.target.reset();render();toast("Survey submitted. See the Matches and analysis tab.");
+ });
+}
+function toast(t){const el=document.getElementById("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,3000)}
+document.getElementById("menteeForm").innerHTML=form("mentee");
+document.getElementById("mentorForm").innerHTML=form("mentor");
+bind("mentee");bind("mentor");
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{
+ document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+ ["mentee","mentor","results"].forEach(id=>document.getElementById(id).hidden=id!==b.dataset.t);
+}));
+document.getElementById("reset").addEventListener("click",()=>{seedData();render()});
+seedData();render();
+</script>
+</body>
+</html>
