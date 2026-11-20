@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SEED_ALERTS, actionFor, buildSubmission, computeRisk, countAtRisk, deptHealth, riskLevel, scoreEmoji, topBlockers } from "./pulse";
+import { SEED_ALERTS, SEED_NOTES, buildDropboxNote, countOpenFollowUps, actionFor, buildSubmission, computeRisk, countAtRisk, deptHealth, riskLevel, scoreEmoji, topBlockers } from "./pulse";
 
 describe("pulse scoring", () => {
   it("scores all-5 check-ins as zero risk and all-1 as 100", () => {
@@ -81,5 +81,24 @@ describe("dynamic dashboard state", () => {
   it("surfaces new blocker themes from feedback", () => {
     const subs = Array.from({ length: 30 }, () => checkIn("T&O", 2, "I feel isolated and alone").submission);
     expect(topBlockers(subs).map((b) => b.tag)).toContain("isolated");
+  });
+});
+
+describe("open dropbox", () => {
+  const base = { message: "  Need help  ", department: "T&O" as const, departmentLabel: "T&O", anonId: 321 };
+
+  it("hides the name when anonymous and falls back to anonymous when no name is given", () => {
+    expect(buildDropboxNote({ ...base, followUp: true, anonymous: true, name: "Jordan Patel" }).name).toBe("Anonymous #321");
+    const blank = buildDropboxNote({ ...base, followUp: false, anonymous: false, name: "  " });
+    expect(blank.anonymous).toBe(true);
+    const named = buildDropboxNote({ ...base, followUp: false, anonymous: false, name: "Jordan Patel" });
+    expect([named.name, named.anonymous, named.message]).toEqual(["Jordan Patel", false, "Need help"]);
+  });
+
+  it("counts only unhandled follow-up requests", () => {
+    const n = buildDropboxNote({ ...base, followUp: true, anonymous: true, name: "" });
+    expect(countOpenFollowUps([n, ...SEED_NOTES])).toBe(2);
+    expect(countOpenFollowUps([{ ...n, handled: true }, ...SEED_NOTES])).toBe(1);
+    expect(countOpenFollowUps([buildDropboxNote({ ...base, followUp: false, anonymous: true, name: "" })])).toBe(0);
   });
 });

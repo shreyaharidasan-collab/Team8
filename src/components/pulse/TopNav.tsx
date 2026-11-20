@@ -1,14 +1,25 @@
-import { Activity, LayoutDashboard, RotateCcw, Smartphone } from "lucide-react";
+import { Activity, Inbox, LayoutDashboard, RotateCcw, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type View = "student" | "coordinator";
+export type View = "student" | "dropbox" | "coordinator";
 
 const VIEWS: { key: View; label: string; short: string; icon: typeof Smartphone }[] = [
   { key: "student", label: "Student Mobile Check-In", short: "Check-In", icon: Smartphone },
+  { key: "dropbox", label: "Open Dropbox", short: "Dropbox", icon: Inbox },
   { key: "coordinator", label: "Coordinator Command Center", short: "Command Center", icon: LayoutDashboard },
 ];
 
-function ViewSwitcher({ view, onChange, className }: { view: View; onChange: (v: View) => void; className?: string }) {
+function ViewSwitcher({
+  view,
+  onChange,
+  className,
+  dropboxCount = 0,
+}: {
+  view: View;
+  onChange: (v: View) => void;
+  className?: string;
+  dropboxCount?: number;
+}) {
   return (
     <div
       role="tablist"
@@ -33,6 +44,14 @@ function ViewSwitcher({ view, onChange, className }: { view: View; onChange: (v:
             <Icon className="h-4 w-4" />
             <span className="hidden lg:inline">{label}</span>
             <span className="lg:hidden">{short}</span>
+            {key === "coordinator" && dropboxCount > 0 && (
+              <span
+                className="tabular rounded-full bg-destructive px-1.5 text-[10px] font-bold leading-4 text-destructive-foreground"
+                title={`${dropboxCount} dropbox follow-up${dropboxCount === 1 ? "" : "s"}`}
+              >
+                {dropboxCount}
+              </span>
+            )}
           </button>
         );
       })}
@@ -45,12 +64,15 @@ export function TopNav({
   onChange,
   alertCount,
   onReset,
+  followUpCount = 0,
 }: {
   view: View;
   onChange: (v: View) => void;
   alertCount: number;
   /** Optional: when provided, shows a "Reset Demo Data" button. */
   onReset?: () => void;
+  /** Open Dropbox follow-up requests awaiting a coordinator; shown as a badge on the Command Center tab. */
+  followUpCount?: number;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
@@ -61,15 +83,15 @@ export function TopNav({
           </div>
           <div className="leading-none">
             <div className="font-display text-base font-bold text-primary-deep">
-              RBC <span className="text-primary">Pulse</span>
+              RBC <span className="text-primary">Relay</span>
             </div>
             <div className="mt-0.5 hidden text-[11px] font-medium text-muted-foreground sm:block">
-              Early Talent & Co-op
+              Early Talent Support Hub
             </div>
           </div>
         </div>
 
-        <ViewSwitcher view={view} onChange={onChange} className="hidden md:inline-flex" />
+        <ViewSwitcher view={view} onChange={onChange} className="hidden md:inline-flex" dropboxCount={followUpCount} />
 
         <div className="flex items-center gap-3">
           {onReset && (
@@ -92,19 +114,19 @@ export function TopNav({
           )}
           <div className="flex items-center gap-2.5 rounded-full border bg-card py-1 pl-1 pr-1 sm:pr-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
-              {view === "student" ? "JP" : "SR"}
+              {view !== "coordinator" ? "JP" : "SR"}
             </div>
             <div className="hidden leading-tight sm:block">
-              <div className="text-xs font-semibold">{view === "student" ? "Jordan Patel" : "Sarah Reid"}</div>
+              <div className="text-xs font-semibold">{view !== "coordinator" ? "Jordan Patel" : "Sarah Reid"}</div>
               <div className="text-[11px] text-muted-foreground">
-                {view === "student" ? "Co-op Student" : "Early Talent Lead"}
+                {view !== "coordinator" ? "Co-op Student" : "Early Talent Lead"}
               </div>
             </div>
           </div>
         </div>
       </div>
       <div className="border-t px-4 py-2 md:hidden">
-        <ViewSwitcher view={view} onChange={onChange} className="flex w-full" />
+        <ViewSwitcher view={view} onChange={onChange} className="flex w-full" dropboxCount={followUpCount} />
       </div>
     </header>
   );

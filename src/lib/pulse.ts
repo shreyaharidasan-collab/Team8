@@ -385,10 +385,10 @@ export function playbookFor(row: AtRiskRow): Playbook {
         title: "Confidential Opt-In 1:1 Relay",
         summary: `Flag for ${row.name}: ${row.trend}. Reach out without breaking anonymity.`,
         steps: [
-          "Send an encrypted blind notification through RBC Pulse — the student's identity is never revealed to you.",
+          "Send an encrypted blind notification through RBC Relay — the student's identity is never revealed to you.",
           "Invite them to opt into a confidential 20-minute Early Talent coffee chat at a time they choose.",
           `Nudge the ${row.departmentLabel} team lead to restore a weekly 1:1 cadence for all co-ops (team-wide, no names).`,
-          "Re-check this student's pulse next week and close the loop automatically.",
+          "Re-check this student's check-in next week and close the loop automatically.",
         ],
         privacy: "Identity stays sealed unless the student chooses to share it.",
       };
@@ -400,7 +400,7 @@ export function playbookFor(row: AtRiskRow): Playbook {
           "Open a priority IT ticket for repo and environment access, tagged Early Talent SLA (48h).",
           "Book a 15-minute sync with the hiring manager to agree on interim tasks while access is restored.",
           "Pair the student with a buddy developer for shadowing until unblocked.",
-          "Confirm resolution with the student in next week's pulse.",
+          "Confirm resolution with the student in next week's check-in.",
         ],
       };
     case "stretch":
@@ -431,8 +431,79 @@ export function playbookFor(row: AtRiskRow): Playbook {
         steps: [
           "Suggest a low-key team coffee or lunch-and-learn hosted by the team lead.",
           "Add the student to the cohort's peer circle for cross-team connection.",
-          "Follow up in two weeks via pulse.",
+          "Follow up in two weeks via the weekly check-in.",
         ],
       };
   }
 }
+
+/** Open Dropbox: unscheduled notes students can send any time, outside the weekly check-in. */
+export interface DropboxNote {
+  id: string;
+  /** Display name: "Anonymous #123" when anonymous. */
+  name: string;
+  anonymous: boolean;
+  department: Department;
+  departmentLabel: string;
+  message: string;
+  /** True when the student asked for someone to follow up. */
+  followUp: boolean;
+  /** Coordinator has actioned the follow-up (only meaningful when followUp is true). */
+  handled: boolean;
+  submittedAt: Date;
+}
+
+export const DROPBOX_MAX_LENGTH = 1000;
+
+export function buildDropboxNote(input: {
+  message: string;
+  followUp: boolean;
+  anonymous: boolean;
+  name: string;
+  department: Department;
+  departmentLabel: string;
+  anonId: number;
+}): DropboxNote {
+  const name = input.name.trim();
+  return {
+    id: `note-${Date.now()}-${input.anonId}`,
+    name: input.anonymous || !name ? `Anonymous #${input.anonId}` : name,
+    anonymous: input.anonymous || !name,
+    department: input.department,
+    departmentLabel: input.departmentLabel,
+    message: input.message.trim().slice(0, DROPBOX_MAX_LENGTH),
+    followUp: input.followUp,
+    handled: false,
+    submittedAt: new Date(),
+  };
+}
+
+/** Follow-up requests the coordinator hasn't actioned yet. */
+export function countOpenFollowUps(notes: DropboxNote[]): number {
+  return notes.filter((n) => n.followUp && !n.handled).length;
+}
+
+export const SEED_NOTES: DropboxNote[] = [
+  {
+    id: "seed-note-1",
+    name: "Anonymous #276",
+    anonymous: true,
+    department: "Cyber Security",
+    departmentLabel: "Cyber Security",
+    message: "Honestly feeling a bit lost on who to ask when my mentor is in meetings all day. Would love someone to check in.",
+    followUp: true,
+    handled: false,
+    submittedAt: new Date("2027-06-14T15:20:00"),
+  },
+  {
+    id: "seed-note-2",
+    name: "Priya Shah",
+    anonymous: false,
+    department: "Digital",
+    departmentLabel: "Digital",
+    message: "Just wanted to say the shadowing session with the design team this week was a highlight. More of these please!",
+    followUp: false,
+    handled: false,
+    submittedAt: new Date("2027-06-13T10:05:00"),
+  },
+];

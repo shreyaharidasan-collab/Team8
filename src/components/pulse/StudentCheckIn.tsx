@@ -48,7 +48,7 @@ export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => 
           <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-foreground">
             {DEPARTMENT_OPTIONS.find((d) => d.department === deptKey)?.label}
           </span>
-          <h1 className="mt-3 text-2xl font-bold">Weekly Pulse Check-In</h1>
+          <h1 className="mt-3 text-2xl font-bold">Weekly Check-In</h1>
           <p className="mt-1 text-sm text-primary-foreground/80">Takes 30 seconds • Week 6 of 16</p>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-primary-foreground/20">
             <div className="h-full w-[37.5%] rounded-full bg-accent" />
@@ -143,7 +143,7 @@ export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => 
           </div>
 
           <Button type="submit" variant="brand" size="xl" className="w-full" disabled={sending}>
-            {sending ? "Sending…" : "Send Weekly Pulse"}
+            {sending ? "Sending…" : "Send Weekly Check-In"}
             {!sending && <Send />}
           </Button>
         </div>

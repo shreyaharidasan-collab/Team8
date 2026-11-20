@@ -1,9 +1,12 @@
-# RBC Pulse
+# RBC Relay
 
-A single-page demo of RBC Early Talent & Co-op weekly pulse check-ins: a 30-second mobile check-in for students and a live Coordinator Command Center for sentiment, blockers and at-risk retention alerts.
+An Early Talent support & feedback hub for RBC co-ops, built as a single-page demo with three views:
 
-- Demo state (check-ins, alerts, interventions) is saved in `localStorage`; use **Reset Demo Data** in the top bar to restore the defaults.
-- Scoring, risk thresholds, seed data and dashboard calculations live in `src/lib/pulse.ts`.
+- **Weekly Check-In** — a 30-second mobile check-in with a department tag.
+- **Open Dropbox** — an always-available place to vent, share a win or flag a blocker, with optional follow-up and anonymity.
+- **Coordinator Command Center** — live sentiment, blockers, at-risk retention alerts and dropbox notes.
+
+Demo state (check-ins, alerts, interventions, dropbox notes, last department) is saved in `localStorage`; use **Reset Demo Data** in the top bar to restore the defaults. Scoring, risk thresholds, seed data and dashboard calculations live in `src/lib/pulse.ts`.
 
 ## Development
 
@@ -15,7 +18,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Hosting note
-
-This repository is connected to Lovable and syncs with the project's `main` branch. Avoid rewriting pushed history.

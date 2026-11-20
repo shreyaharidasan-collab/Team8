@@ -9,7 +9,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * RBC Pulse design system.
+ * RBC Relay design system.
  * Brand: royal blue #0051A5, gold #FFD200, white cards, slate-gray #F4F6F9 background.
  * Status scale: success (healthy), warning (watch/flagged), destructive (action needed).
  */

@@ -3,6 +3,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
+  EyeOff,
+  Inbox,
   Radio,
   Smile,
   Sparkles,
@@ -19,12 +21,14 @@ import {
   type AtRiskRow,
   type Department,
   type DeptHealth,
+  type DropboxNote,
   DEPARTMENTS,
   type RiskLevel,
   type Submission,
   blendedAverages,
   cohortPositive,
   countAtRisk,
+  countOpenFollowUps,
   deptHealth,
   topBlockers,
   scoreEmoji,
@@ -122,15 +126,22 @@ export function CoordinatorDashboard({
   alerts,
   submissions,
   onSendIntervention,
+  notes = [],
+  onHandleNote,
 }: {
   alerts: AtRiskRow[];
   submissions: Submission[];
   onSendIntervention: (row: AtRiskRow) => void;
+  /** Open Dropbox notes. Optional so existing callers keep working. */
+  notes?: DropboxNote[];
+  /** Called when the coordinator actions a follow-up request. */
+  onHandleNote?: (note: DropboxNote) => void;
 }) {
   const [dept, setDept] = useState<DeptFilter>("all");
   const [risk, setRisk] = useState<RiskFilter>("all");
   const [cohort, setCohort] = useState("summer-2027");
   const [active, setActive] = useState<AtRiskRow | null>(null);
+  const [notesFilter, setNotesFilter] = useState<"all" | "follow-up">("all");
 
   const averages = useMemo(() => blendedAverages(submissions), [submissions]);
   const newAlerts = alerts.filter((a) => a.isNew).length;
@@ -138,6 +149,16 @@ export function CoordinatorDashboard({
   const positive = useMemo(() => cohortPositive(submissions), [submissions]);
   const blockers = useMemo(() => topBlockers(submissions), [submissions]);
   const health = useMemo(() => deptHealth(submissions), [submissions]);
+
+  const openFollowUps = countOpenFollowUps(notes);
+  const noteRows = notes
+    .filter((n) => dept === "all" || n.department === dept)
+    .filter((n) => notesFilter === "all" || n.followUp)
+    .sort(
+      (a, b) =>
+        Number(b.followUp && !b.handled) - Number(a.followUp && !a.handled) ||
+        b.submittedAt.getTime() - a.submittedAt.getTime(),
+    );
 
   const rows = alerts
     .filter((a) => dept === "all" || a.department === dept)
@@ -227,11 +248,14 @@ export function CoordinatorDashboard({
             <span className="text-sm font-semibold text-destructive">Students</span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            {newAlerts > 0 ? (
-              <span className="font-semibold text-destructive">+{newAlerts} from live check-ins</span>
-            ) : (
-              "Needs proactive outreach"
+            {newAlerts > 0 && <span className="font-semibold text-destructive">+{newAlerts} from live check-ins</span>}
+            {newAlerts > 0 && openFollowUps > 0 && " · "}
+            {openFollowUps > 0 && (
+              <span className="font-semibold text-destructive">
+                {openFollowUps} dropbox follow-up{openFollowUps === 1 ? "" : "s"}
+              </span>
             )}
+            {newAlerts === 0 && openFollowUps === 0 && "Needs proactive outreach"}
           </div>
         </Card>
       </div>
@@ -410,9 +434,98 @@ export function CoordinatorDashboard({
         )}
       </Card>
 
+      <Card className="p-0 sm:p-0">
+        <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold">
+              <Inbox className="h-4 w-4 text-primary" /> Open Dropbox · Student Notes
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Unscheduled notes from students · {openFollowUps} follow-up{openFollowUps === 1 ? "" : "s"} waiting
+            </p>
+          </div>
+          <div role="tablist" aria-label="Filter notes" className="inline-flex self-start rounded-full border bg-muted p-1">
+            {(
+              [
+                ["all", "All notes"],
+                ["follow-up", "Follow-up requested"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={notesFilter === key}
+                onClick={() => setNotesFilter(key)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-semibold transition-all",
+                  notesFilter === key ? "bg-primary text-primary-foreground shadow-lift" : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {noteRows.length === 0 ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">No dropbox notes match these filters.</div>
+        ) : (
+          <ul className="divide-y">
+            {noteRows.map((n) => (
+              <li key={n.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                <div className="min-w-0 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span className="font-semibold">{n.name}</span>
+                    <span className="text-muted-foreground">· {n.departmentLabel}</span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                        n.anonymous ? "bg-muted text-muted-foreground" : "bg-primary-soft text-primary",
+                      )}
+                    >
+                      {n.anonymous && <EyeOff className="h-3 w-3" />}
+                      {n.anonymous ? "Anonymous" : "Named"}
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                        n.followUp ? "bg-destructive-soft text-destructive" : "bg-success-soft text-success",
+                      )}
+                    >
+                      {n.followUp ? "Follow-up requested" : "Just sharing"}
+                    </span>
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm text-foreground/90">{n.message}</p>
+                  <div className="text-xs text-muted-foreground">
+                    {n.submittedAt.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </div>
+                </div>
+                {n.followUp && (
+                  <div className="shrink-0">
+                    {n.handled ? (
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-success-soft px-3 py-1.5 text-xs font-bold text-success">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Follow-up Sent ✓
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        className="rounded-lg font-semibold"
+                        onClick={() => onHandleNote?.(n)}
+                      >
+                        {n.anonymous ? "Send Blind Relay Reply" : "Mark Followed Up"}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       {submissions.length > 0 && (
         <Card>
-          <h2 className="text-lg font-bold">Live Pulse Feed</h2>
+          <h2 className="text-lg font-bold">Live Check-In Feed</h2>
           <p className="text-sm text-muted-foreground">Check-ins received (saved on this device)</p>
           <ul className="mt-4 divide-y">
             {submissions.map((s) => (
