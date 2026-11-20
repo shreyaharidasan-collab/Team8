@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionFor, buildSubmission, computeRisk, riskLevel, scoreEmoji } from "./pulse";
+import { SEED_ALERTS, actionFor, buildSubmission, computeRisk, countAtRisk, deptHealth, riskLevel, scoreEmoji, topBlockers } from "./pulse";
 
 describe("pulse scoring", () => {
   it("scores all-5 check-ins as zero risk and all-1 as 100", () => {
@@ -50,5 +50,36 @@ describe("pulse scoring", () => {
       anonId: 1,
     });
     expect(alert).toBeNull();
+  });
+});
+
+describe("dynamic dashboard state", () => {
+  const checkIn = (department: "T&O" | "Cyber Security", scores: number, feedback: string) =>
+    buildSubmission({
+      scores: { mentorship: scores, onboarding: scores, team: scores, career: scores },
+      feedback,
+      anonymous: true,
+      name: "Jordan Patel",
+      department,
+      departmentLabel: department,
+      anonId: 500,
+    });
+
+  it("keeps the At-Risk count equal to the number of rows", () => {
+    expect(countAtRisk(SEED_ALERTS)).toBe(6);
+    const { alert } = checkIn("T&O", 1, "no vpn");
+    expect(countAtRisk([alert!, ...SEED_ALERTS])).toBe(7);
+  });
+
+  it("lowers a department's sentiment after a negative check-in", () => {
+    const before = deptHealth([]).find((d) => d.department === "Cyber Security")!.sentiment;
+    const { submission } = checkIn("Cyber Security", 1, "");
+    const after = deptHealth([submission]).find((d) => d.department === "Cyber Security")!.sentiment;
+    expect(after).toBeLessThan(before);
+  });
+
+  it("surfaces new blocker themes from feedback", () => {
+    const subs = Array.from({ length: 30 }, () => checkIn("T&O", 2, "I feel isolated and alone").submission);
+    expect(topBlockers(subs).map((b) => b.tag)).toContain("isolated");
   });
 });

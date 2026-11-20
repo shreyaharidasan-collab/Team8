@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { CATEGORIES, type Scores, scoreEmoji, scoreLabel } from "@/lib/pulse";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CATEGORIES, DEPARTMENT_OPTIONS, type Department, type Scores, scoreEmoji, scoreLabel } from "@/lib/pulse";
 import { cn } from "@/lib/utils";
 
 const INITIAL: Scores = { mentorship: 3, onboarding: 3, team: 3, career: 3 };
@@ -13,6 +14,8 @@ export interface CheckInPayload {
   scores: Scores;
   feedback: string;
   anonymous: boolean;
+  /** Department tag chosen on the form. Optional so existing callers keep working. */
+  department?: { department: Department; label: string };
 }
 
 export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => void }) {
@@ -20,12 +23,14 @@ export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => 
   const [feedback, setFeedback] = useState("");
   const [anonymous, setAnonymous] = useState(true);
   const [sending, setSending] = useState(false);
+  const [deptKey, setDeptKey] = useState<Department>(DEPARTMENT_OPTIONS[0]!.department);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     setTimeout(() => {
-      onSubmit({ scores, feedback, anonymous });
+      const dept = DEPARTMENT_OPTIONS.find((d) => d.department === deptKey) ?? DEPARTMENT_OPTIONS[0]!;
+      onSubmit({ scores, feedback, anonymous, department: dept });
       setScores(INITIAL);
       setFeedback("");
       setSending(false);
@@ -41,7 +46,7 @@ export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => 
         <div className="relative bg-brand-gradient px-6 pb-7 pt-5 text-primary-foreground">
           <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-primary-foreground/25" />
           <span className="inline-flex items-center rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-accent-foreground">
-            T&O - Software Engineering
+            {DEPARTMENT_OPTIONS.find((d) => d.department === deptKey)?.label}
           </span>
           <h1 className="mt-3 text-2xl font-bold">Weekly Pulse Check-In</h1>
           <p className="mt-1 text-sm text-primary-foreground/80">Takes 30 seconds • Week 6 of 16</p>
@@ -51,6 +56,24 @@ export function StudentCheckIn({ onSubmit }: { onSubmit: (p: CheckInPayload) => 
         </div>
 
         <div className="space-y-4 px-5 py-6">
+          <div>
+            <label htmlFor="department" className="text-sm font-bold">
+              Your department
+            </label>
+            <Select value={deptKey} onValueChange={(v) => setDeptKey(v as Department)}>
+              <SelectTrigger id="department" className="mt-2 h-11 rounded-xl bg-background/60 font-semibold">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DEPARTMENT_OPTIONS.map((d) => (
+                  <SelectItem key={d.department} value={d.department}>
+                    {d.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {CATEGORIES.map((c) => {
             const value = scores[c.key];
             return (

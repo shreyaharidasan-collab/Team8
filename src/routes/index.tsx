@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CoordinatorDashboard } from "@/components/pulse/CoordinatorDashboard";
 import { type CheckInPayload, StudentCheckIn } from "@/components/pulse/StudentCheckIn";
 import { TopNav, type View } from "@/components/pulse/TopNav";
-import { type AtRiskRow, BASELINE_AT_RISK, SEED_ALERTS, type Submission, buildSubmission } from "@/lib/pulse";
+import {
+  type AtRiskRow,
+  DEPARTMENT_OPTIONS,
+  SEED_ALERTS,
+  type Submission,
+  buildSubmission,
+  countAtRisk,
+} from "@/lib/pulse";
+import { clearPulseState, loadPulseState, savePulseState } from "@/lib/pulse-storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,17 +35,45 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-const STUDENT = { name: "Jordan Patel", department: "T&O" as const, departmentLabel: "T&O - Software Engineering" };
+const STUDENT = { name: "Jordan Patel" };
+const DEFAULT_DEPARTMENT = DEPARTMENT_OPTIONS[0]!;
 
 function Index() {
   const [view, setView] = useState<View>("student");
   const [alerts, setAlerts] = useState<AtRiskRow[]>(SEED_ALERTS);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Restore demo state after mount (keeps SSR markup and first client render identical).
+  useEffect(() => {
+    const saved = loadPulseState();
+    if (saved) {
+      setAlerts(saved.alerts);
+      setSubmissions(saved.submissions);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) savePulseState({ alerts, submissions });
+  }, [hydrated, alerts, submissions]);
+
+  const handleReset = () => {
+    clearPulseState();
+    setAlerts(SEED_ALERTS);
+    setSubmissions([]);
+    toast.success("Demo data reset", { description: "Restored the default mock data." });
+  };
 
   const handleCheckIn = (p: CheckInPayload) => {
+    const dept = p.department ?? DEFAULT_DEPARTMENT;
     const { submission, alert } = buildSubmission({
-      ...p,
-      ...STUDENT,
+      scores: p.scores,
+      feedback: p.feedback,
+      anonymous: p.anonymous,
+      name: STUDENT.name,
+      department: dept.department,
+      departmentLabel: dept.label,
       anonId: 500 + Math.floor(Math.random() * 400),
     });
     setSubmissions((s) => [submission, ...s]);
@@ -60,11 +96,11 @@ function Index() {
     });
   };
 
-  const alertCount = BASELINE_AT_RISK + alerts.filter((a) => a.isNew).length;
+  const alertCount = countAtRisk(alerts);
 
   return (
     <div className="min-h-screen">
-      <TopNav view={view} onChange={setView} alertCount={alertCount} />
+      <TopNav view={view} onChange={setView} alertCount={alertCount} onReset={handleReset} />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10">
         {view === "student" ? (
           <StudentCheckIn onSubmit={handleCheckIn} />

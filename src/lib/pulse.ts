@@ -24,6 +24,14 @@ export type Scores = Record<Category, number>;
 export type Department = "T&O" | "Cyber Security" | "Capital Markets" | "Digital";
 export const DEPARTMENTS: Department[] = ["T&O", "Cyber Security", "Capital Markets", "Digital"];
 
+/** Options shown in the student check-in selector; `label` is the tag stored on submissions/alerts. */
+export const DEPARTMENT_OPTIONS: { department: Department; label: string }[] = [
+  { department: "T&O", label: "T&O - Software Engineering" },
+  { department: "Cyber Security", label: "Cyber Security" },
+  { department: "Capital Markets", label: "Capital Markets" },
+  { department: "Digital", label: "Digital" },
+];
+
 export type RiskLevel = "High" | "Medium" | "Low";
 
 export type ActionType = "relay" | "escalate" | "stretch" | "mentor" | "team";
@@ -216,12 +224,50 @@ export const SEED_ALERTS: AtRiskRow[] = [
     action: "stretch",
     status: "open",
   },
+  {
+    id: "seed-233",
+    name: "Anonymous #233",
+    anonymous: true,
+    department: "Digital",
+    departmentLabel: "Digital",
+    riskScore: 68,
+    riskLevel: "Medium",
+    trend: "Team Dynamics dropped 4.2 → 2.8",
+    keywords: "Left out of standups",
+    action: "relay",
+    status: "open",
+  },
+  {
+    id: "seed-sam",
+    name: "Sam Okafor",
+    anonymous: false,
+    department: "Cyber Security",
+    departmentLabel: "Cyber Security",
+    riskScore: 64,
+    riskLevel: "Medium",
+    trend: "Mentorship at 2.5 this week",
+    keywords: "Mentor on leave, no backup",
+    action: "mentor",
+    status: "open",
+  },
+  {
+    id: "seed-341",
+    name: "Anonymous #341",
+    anonymous: true,
+    department: "T&O",
+    departmentLabel: "T&O - Software Engineering",
+    riskScore: 61,
+    riskLevel: "Medium",
+    trend: "Onboarding dropped 3.8 → 2.6",
+    keywords: "Laptop/VPN access delays",
+    action: "escalate",
+    status: "open",
+  },
 ];
 
 /** Cohort-wide baseline averages (out of 5.0) and the response count behind them. */
 export const BASELINE_AVERAGES: Scores = { mentorship: 4.3, team: 4.1, career: 3.9, onboarding: 3.2 };
 export const BASELINE_RESPONSES = 400;
-export const BASELINE_AT_RISK = 6;
 export const ACTIVE_COOPS = 450;
 
 export function blendedAverages(submissions: Submission[]): Scores {
@@ -235,12 +281,95 @@ export function blendedAverages(submissions: Submission[]): Scores {
 }
 
 export type DeptHealth = "Healthy" | "Watch" | "Action Needed";
-export const DEPT_HEALTH: { department: Department; label: string; health: DeptHealth; sentiment: number; note: string }[] = [
-  { department: "Digital", label: "Digital", health: "Healthy", sentiment: 91, note: "Strong mentor coverage" },
-  { department: "T&O", label: "T&O", health: "Watch", sentiment: 79, note: "Onboarding access lag" },
-  { department: "Capital Markets", label: "Capital Markets", health: "Watch", sentiment: 74, note: "Task variety dipping" },
-  { department: "Cyber Security", label: "Cyber Security", health: "Action Needed", sentiment: 58, note: "1:1 cadence missed" },
-];
+export interface DeptHealthRow {
+  department: Department;
+  label: string;
+  health: DeptHealth;
+  sentiment: number;
+  note: string;
+}
+
+/** Baseline % positive per department (and the response weight behind it) before live check-ins. */
+const DEPT_BASELINE: Record<Department, { label: string; sentiment: number; note: string }> = {
+  Digital: { label: "Digital", sentiment: 91, note: "Strong mentor coverage" },
+  "T&O": { label: "T&O", sentiment: 79, note: "Onboarding access lag" },
+  "Capital Markets": { label: "Capital Markets", sentiment: 74, note: "Task variety dipping" },
+  "Cyber Security": { label: "Cyber Security", sentiment: 58, note: "1:1 cadence missed" },
+};
+const DEPT_BASELINE_RESPONSES = 100;
+
+export function averageScore(scores: Scores): number {
+  return Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length;
+}
+
+export function isPositive(s: Submission): boolean {
+  return averageScore(s.scores) >= 3.5;
+}
+
+export function healthFor(sentiment: number): DeptHealth {
+  if (sentiment >= 85) return "Healthy";
+  if (sentiment >= 70) return "Watch";
+  return "Action Needed";
+}
+
+/** Department heatmap: baseline sentiment blended with this session's check-ins. */
+export function deptHealth(submissions: Submission[]): DeptHealthRow[] {
+  return DEPARTMENTS.map((department) => {
+    const base = DEPT_BASELINE[department];
+    const mine = submissions.filter((s) => s.department === department);
+    const positive = mine.filter(isPositive).length;
+    const sentiment = Math.round(
+      (base.sentiment * DEPT_BASELINE_RESPONSES + positive * 100) / (DEPT_BASELINE_RESPONSES + mine.length),
+    );
+    return { department, label: base.label, health: healthFor(sentiment), sentiment, note: base.note };
+  }).sort((a, b) => b.sentiment - a.sentiment);
+}
+
+/** Cohort % positive, blended with live check-ins. */
+export function cohortPositive(submissions: Submission[]): number {
+  const positive = submissions.filter(isPositive).length;
+  return (0.82 * BASELINE_RESPONSES + positive) / (BASELINE_RESPONSES + submissions.length);
+}
+
+/** Single source of truth for the At-Risk Alerts KPI and nav badge: exactly the rows in the retention table. */
+export function countAtRisk(alerts: AtRiskRow[]): number {
+  return alerts.length;
+}
+
+/** Baseline blocker mentions (tag → count) before live check-ins. */
+const BASELINE_BLOCKERS: Record<string, number> = {
+  "access blockers": 38,
+  "unclear expectations": 24,
+  "mentor gaps": 14,
+  isolated: 10,
+  "repetitive work": 8,
+  "workload strain": 6,
+};
+const BLOCKER_LABELS: Record<string, string> = {
+  "access blockers": "Laptop/VPN access delays",
+  "unclear expectations": "Unclear sprint expectations",
+  "mentor gaps": "Mentor 1:1 gaps",
+  isolated: "Feeling isolated",
+  "repetitive work": "Repetitive admin work",
+  "workload strain": "Workload strain",
+  "unclear tasks": "Unclear tasks",
+};
+
+/** Top systemic blockers by share of mentions, blending baseline with new feedback. Positive tags are ignored. */
+export function topBlockers(submissions: Submission[], limit = 3): { tag: string; label: string; share: number }[] {
+  const counts: Record<string, number> = { ...BASELINE_BLOCKERS };
+  for (const s of submissions) {
+    for (const tag of extractKeywords(s.feedback)) {
+      if (tag === "quick win") continue;
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([tag, n]) => ({ tag, label: BLOCKER_LABELS[tag] ?? tag, share: Math.round((n / total) * 100) }));
+}
 
 export interface Playbook {
   title: string;

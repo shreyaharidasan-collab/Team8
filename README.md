@@ -1,16 +1,9 @@
-# Screenshot To Spark
+# RBC Pulse
 
-Implement exactly the screenshot and nothing else
+A single-page demo of RBC Early Talent & Co-op weekly pulse check-ins: a 30-second mobile check-in for students and a live Coordinator Command Center for sentiment, blockers and at-risk retention alerts.
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/572e7cda-dea6-4d02-8d01-13b12b2788dd).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- Demo state (check-ins, alerts, interventions) is saved in `localStorage`; use **Reset Demo Data** in the top bar to restore the defaults.
+- Scoring, risk thresholds, seed data and dashboard calculations live in `src/lib/pulse.ts`.
 
 ## Development
 
@@ -22,3 +15,7 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Hosting note
+
+This repository is connected to Lovable and syncs with the project's `main` branch. Avoid rewriting pushed history.

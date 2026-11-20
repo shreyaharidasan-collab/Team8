@@ -15,16 +15,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   ACTION_LABELS,
   ACTIVE_COOPS,
-  BASELINE_AT_RISK,
   BASELINE_RESPONSES,
   type AtRiskRow,
   type Department,
   type DeptHealth,
   DEPARTMENTS,
-  DEPT_HEALTH,
   type RiskLevel,
   type Submission,
   blendedAverages,
+  cohortPositive,
+  countAtRisk,
+  deptHealth,
+  topBlockers,
   scoreEmoji,
 } from "@/lib/pulse";
 import { cn } from "@/lib/utils";
@@ -132,18 +134,17 @@ export function CoordinatorDashboard({
 
   const averages = useMemo(() => blendedAverages(submissions), [submissions]);
   const newAlerts = alerts.filter((a) => a.isNew).length;
-  const atRisk = BASELINE_AT_RISK + newAlerts;
-  const positive =
-    (0.82 * BASELINE_RESPONSES +
-      submissions.filter((s) => Object.values(s.scores).reduce((a, b) => a + b, 0) / 4 >= 3.5).length) /
-    (BASELINE_RESPONSES + submissions.length);
+  const atRisk = countAtRisk(alerts);
+  const positive = useMemo(() => cohortPositive(submissions), [submissions]);
+  const blockers = useMemo(() => topBlockers(submissions), [submissions]);
+  const health = useMemo(() => deptHealth(submissions), [submissions]);
 
   const rows = alerts
     .filter((a) => dept === "all" || a.department === dept)
     .filter((a) => risk === "all" || a.riskLevel === risk)
     .sort((a, b) => Number(!!b.isNew) - Number(!!a.isNew) || b.riskScore - a.riskScore);
 
-  const heat = DEPT_HEALTH.filter((d) => dept === "all" || d.department === dept);
+  const heat = health.filter((d) => dept === "all" || d.department === dept);
 
   return (
     <div className="space-y-6">
@@ -279,18 +280,14 @@ export function CoordinatorDashboard({
               <Sparkles className="h-3.5 w-3.5" /> AI-extracted top systemic blockers
             </div>
             <ul className="mt-3 space-y-2 text-sm">
-              <li className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 font-medium">
-                  <Zap className="h-4 w-4 text-warning" /> Laptop/VPN access delays
-                </span>
-                <span className="text-xs text-muted-foreground">38% of mentions</span>
-              </li>
-              <li className="flex items-center justify-between gap-3">
-                <span className="flex items-center gap-2 font-medium">
-                  <Zap className="h-4 w-4 text-warning" /> Unclear sprint expectations
-                </span>
-                <span className="text-xs text-muted-foreground">24% of mentions</span>
-              </li>
+              {blockers.map((b) => (
+                <li key={b.tag} className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 font-medium">
+                    <Zap className="h-4 w-4 text-warning" /> {b.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{b.share}% of mentions</span>
+                </li>
+              ))}
             </ul>
           </div>
         </Card>
@@ -364,7 +361,7 @@ export function CoordinatorDashboard({
                             <div className="font-semibold">{r.name}</div>
                             {r.isNew && (
                               <span className="text-[10px] font-bold uppercase tracking-wide text-primary">
-                                New · just now
+                                New check-in
                               </span>
                             )}
                           </div>
@@ -416,7 +413,7 @@ export function CoordinatorDashboard({
       {submissions.length > 0 && (
         <Card>
           <h2 className="text-lg font-bold">Live Pulse Feed</h2>
-          <p className="text-sm text-muted-foreground">Check-ins received this session</p>
+          <p className="text-sm text-muted-foreground">Check-ins received (saved on this device)</p>
           <ul className="mt-4 divide-y">
             {submissions.map((s) => (
               <li key={s.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">

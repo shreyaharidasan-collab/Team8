@@ -1,4 +1,4 @@
-import { Activity, LayoutDashboard, Smartphone } from "lucide-react";
+import { Activity, LayoutDashboard, RotateCcw, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type View = "student" | "coordinator";
@@ -40,7 +40,18 @@ function ViewSwitcher({ view, onChange, className }: { view: View; onChange: (v:
   );
 }
 
-export function TopNav({ view, onChange, alertCount }: { view: View; onChange: (v: View) => void; alertCount: number }) {
+export function TopNav({
+  view,
+  onChange,
+  alertCount,
+  onReset,
+}: {
+  view: View;
+  onChange: (v: View) => void;
+  alertCount: number;
+  /** Optional: when provided, shows a "Reset Demo Data" button. */
+  onReset?: () => void;
+}) {
   return (
     <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -61,6 +72,18 @@ export function TopNav({ view, onChange, alertCount }: { view: View; onChange: (
         <ViewSwitcher view={view} onChange={onChange} className="hidden md:inline-flex" />
 
         <div className="flex items-center gap-3">
+          {onReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              title="Clear saved check-ins and restore default mock data"
+              className="inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Reset Demo Data</span>
+              <span className="sr-only sm:hidden">Reset Demo Data</span>
+            </button>
+          )}
           {view === "coordinator" && alertCount > 0 && (
             <span className="hidden items-center gap-1.5 rounded-full bg-destructive-soft px-2.5 py-1 text-xs font-semibold text-destructive sm:inline-flex">
               <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-destructive text-destructive" />
